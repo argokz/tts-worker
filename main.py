@@ -65,10 +65,14 @@ async def synthesize(
         
         tts = load_model()
         
-        # Split text into chunks (sentences) to prevent OOM
-        # Splitting by punctuation
-        raw_sentences = re.split(r'(?<=[.!?])\s+', text)
-        sentences = [s.strip() for s in raw_sentences if s.strip()]
+        # Split text into chunks. Prioritize '|' from GPT, then fall back to punctuation.
+        # This ensures natural pauses and avoids CUDA OOM.
+        segments = [s.strip() for s in text.split('|') if s.strip()]
+        sentences = []
+        for seg in segments:
+            # Further split very long segments by punctuation if necessary
+            raw_sentences = re.split(r'(?<=[.!?])\s+', seg)
+            sentences.extend([s.strip() for s in raw_sentences if s.strip()])
         
         # If text is long but has no punctuation, split by length
         if not sentences and text.strip():
