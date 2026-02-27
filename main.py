@@ -54,14 +54,16 @@ async def synthesize(
         # Generate using Qwen-TTS
         tts = load_model()
         
-        # Qwen3-TTS synthesis logic
-        # Note: This follows the pattern from Voicebox backend
-        await tts.tts_to_file(
+        import soundfile as sf
+        
+        audio, sample_rate = tts.generate(
             text=text,
             speaker_wav=str(ref_path),
-            language=language,
-            file_path=str(output_path)
+            language=language
         )
+        
+        # Save to WAV
+        sf.write(str(output_path), audio, sample_rate)
         
         return FileResponse(
             path=output_path,
