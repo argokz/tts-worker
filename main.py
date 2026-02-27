@@ -51,19 +51,28 @@ async def synthesize(
             
         output_path = temp_dir / f"out_{uuid.uuid4().hex[:8]}.wav"
         
-        # Generate using Qwen-TTS
+        # Prepare for generation
+        import soundfile as sf
+        import numpy as np
+        
         tts = load_model()
         
-        import soundfile as sf
-        
-        audio, sample_rate = tts.generate(
+        # generate_voice_clone returns Tuple[List[np.ndarray], int]
+        audio_list, sample_rate = tts.generate_voice_clone(
             text=text,
-            speaker_wav=str(ref_path),
-            language=language
+            language=language,
+            ref_audio=str(ref_path),
+            x_vector_only_mode=True
         )
         
+        # Concatenate audio chunks if multiple
+        if isinstance(audio_list, list) and len(audio_list) > 0:
+            full_audio = np.concatenate(audio_list)
+        else:
+            full_audio = audio_list
+            
         # Save to WAV
-        sf.write(str(output_path), audio, sample_rate)
+        sf.write(str(output_path), full_audio, sample_rate)
         
         return FileResponse(
             path=output_path,
